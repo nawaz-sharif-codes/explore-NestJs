@@ -1,31 +1,39 @@
 ## Explore-NestJs
 
 ## How to install NestJs cli?
+
 > pnpm install -g @nestjs/cli
 
 ## How to create a NestJs application
+
 > nest new <project-name>
 
 ## Decorators
+
 > @Injectable, @Get etc., are decorators which add extra behaviour/metadata to the function or class.
 
 ## How to create resources in NestJs
+
 > nest generate <resource_name> [path]
 
 ## How to create a Module
+
 > nest g module [path]
-~ nest g module auth
+> nest g module auth
 
 ## How to create a Controller
+
 > nest g controller [path]
 
 ## How to create a Service
+
 > nest generate service [path]
 
 ## ConfigModule & ConfigService
->ConfigService is NestJS's official way of reading environment variables. Instead of accessing process.env throughout your application, NestJS centralizes configuration into one module that can be injected wherever it's needed.
 
-```
+> ConfigService is NestJS's official way of reading environment variables. Instead of accessing process.env throughout your application, NestJS centralizes configuration into one module that can be injected wherever it's needed.
+
+```js
 Step 1: Install it
 > npm install @nestjs/config
 
@@ -133,4 +141,608 @@ const secret = this.configService.get<string>('JWT_SECRET');
 returns
 
 my-secret
+```
+
+## MongoDB
+
+- MongoDB is a flexible schema, Document Database. A document can contain nested objects.
+
+```
+{
+  name: "Nawaz",
+  address: {
+    city: "Hyderabad",
+    state: "Telangana",
+    country: "India"
+  }
+}
+```
+
+```
+---------------------------------------------------------
+| SQL             | MongoDB                             |
+| --------------- | ----------------------------------- |
+| Database        | Database                            |
+| Table           | Collection                          |
+| Row             | Document                            |
+| Column          | Field                               |
+| JOIN            | Reference / Embedding / Aggregation |
+| Schema required | Flexible by default                 |
+---------------------------------------------------------
+```
+
+> Internally MongoDB converts it into a compact binary format that's efficient to store and query.
+
+> Benefits
+
+- Faster reads
+- Faster writes
+- Supports more data types than JSON
+- Better indexing
+
+## CRUD in MongoDB
+
+### CREATE - creating documents
+
+> insertOne() - creates a single document
+
+```js
+db.employees.insertOne({
+  name: 'Nawaz',
+  age: 26,
+  department: 'Engineering',
+});
+```
+
+> insertMany() - Insert multiple documents in one request, used for bulk operations
+
+```js
+db.employees.insertMany([
+  {
+    name: 'Alice',
+    age: 30,
+  },
+  {
+    name: 'Bob',
+    age: 28,
+  },
+]);
+```
+
+### READ - for reading documents
+
+> find() - Returns multiple documents.
+
+```js
+db.employees.find()
+
+#Result - Returns a array
+[
+   {...},
+   {...},
+   {...}
+]
+```
+
+> findOne() - returns the first matching document
+
+```js
+db.employees.findOne({
+   email: "nawaz@gmail.com"
+})
+
+Result - Not an array, returns a single document
+
+{
+   name:"Nawaz",
+   ...
+}
+```
+
+> Filtering
+
+Example:
+
+```js
+db.employees.find({
+  department: 'Engineering',
+});
+```
+
+### Comparison Operators - $gt,$gte,$lt,$lte,$ne
+
+```js
+db.employees.find({
+   age: { $gt: 25 }
+})
+
+Greater than or equal
+
+{
+   age: { $gte: 25 }
+}
+
+Less than
+
+{
+   age: { $lt: 40 }
+}
+
+Less than or equal
+
+{
+   age: { $lte: 40 }
+}
+
+Not equal
+
+{
+   department: { $ne: "HR" }
+}
+```
+
+### Combining Conditions
+
+```js
+db.employees.find({
+  age: { $gte: 25 },
+  department: 'Engineering',
+});
+```
+
+### Projections
+
+> In MongoDB, projection means choosing which fields to return from a document. Instead of returning the entire document, you return only the fields you need.
+
+- Syntax
+
+```js
+db.collection.find(
+  <filter>,
+  <projection>
+
+  db.users.find(
+  { email: "nawaz@gmail.com" },
+  {
+    name: 1,
+    contactNumber: 1
+  }
+)
+)
+```
+
+### Projections in Mongoose
+
+```js
+//for include
+const user = await this.userModel.findById(id).select('name email');
+
+//for exclude
+const user = await this.userModel.findById(id).select('-password');
+```
+
+```
+-----------------------------------------------------------------------------------------
+| Operation                         | MongoDB                 | Mongoose                |
+| --------------------------------- | ----------------------- | ----------------------- |
+| Include fields                    | `{ name: 1, email: 1 }` | `.select('name email')` |
+| Exclude fields                    | `{ password: 0 }`       | `.select('-password')`  |
+| Exclude `_id`                     | `{ _id: 0 }`            | `.select('-_id')`       |
+| Include password hidden by schema | N/A                     | `.select('+password')`  |
+-----------------------------------------------------------------------------------------
+```
+
+### Sorting
+
+```js
+Ascending: db.employees.find().sort({
+  age: 1,
+});
+
+Descending: db.employees.find().sort({
+  salary: -1,
+});
+```
+
+### Limiting & Skipping
+
+```js
+Limiting
+
+Get first five employees.
+
+db.employees.find().limit(5)
+Skipping
+
+Useful for pagination.
+
+db.employees.find()
+.skip(10)
+.limit(10)
+```
+
+### UPDATE
+
+> updateOne()
+
+```js
+db.employees.updateOne(
+  {
+    email: 'nawaz@gmail.com',
+  },
+  {
+    $set: {
+      salary: 150000,
+    },
+  },
+);
+```
+
+> updateMany()
+
+```js
+db.employees.updateMany(
+  {
+    department: 'Engineering',
+  },
+  {
+    $set: {
+      isActive: true,
+    },
+  },
+);
+```
+
+### DELETE
+
+> deleteOne()
+
+```js
+db.employees.deleteOne({
+   email: "abc@gmail.com"
+})
+
+Deletes the first matching document.
+```
+
+> deleteMany()
+
+```js
+db.employees.deleteMany({
+   isActive: false
+})
+
+Deletes all inactive employees.
+```
+
+## How this maps to Mongoose
+
+```
+-------------------------------------------------------------
+| MongoDB        | Mongoose                                 |
+| -------------- | ---------------------------------------- |
+| `insertOne()`  | `Model.create()` or `new Model().save()` |
+| `insertMany()` | `Model.insertMany()`                     |
+| `find()`       | `Model.find()`                           |
+| `findOne()`    | `Model.findOne()`                        |
+| `updateOne()`  | `Model.updateOne()`                      |
+| `updateMany()` | `Model.updateMany()`                     |
+| `deleteOne()`  | `Model.deleteOne()`                      |
+| `deleteMany()` | `Model.deleteMany()`                     |
+-------------------------------------------------------------
+```
+
+## Advanced Query Operators
+
+```
+---------------------------------------------------------------------------
+| Operator     | Purpose                                                  |
+| ------------ | -------------------------------------------------------- |
+| `$in`        | Match any value from a list                              |
+| `$nin`       | Exclude values from a list                               |
+| `$or`        | At least one condition must match                        |
+| `$and`       | All conditions must match                                |
+| `$exists`    | Check if a field exists                                  |
+| `$regex`     | Pattern matching / search                                |
+| `$size`      | Match array length                                       |
+| `$all`       | Array must contain all specified values                  |
+| `$elemMatch` | Match a single array element against multiple conditions |
+---------------------------------------------------------------------------
+
+```
+
+### $in - returns all the documents which meets condition
+```js
+db.employees.find({
+  department: {
+    $in: ['Engineering', 'HR'],
+  },
+});
+```
+
+### $nin - opposite of $in
+
+```js
+db.employees.find({
+  department: {
+    $nin: ["Engineering"]
+  }
+})
+```
+
+### $or 
+
+```js
+db.employees.find({
+  $or: [
+    { department: "Engineering" },
+    { salary: { $gt: 150000 } }
+  ]
+})
+```
+
+### and
+
+```js
+db.employees.find({
+  department: "Engineering",
+  age: { $gt: 25 }
+})
+```
+
+### $exists
+
+```js
+db.users.find({
+  phone: {
+    $exists: true
+  }
+})
+```
+
+## Why do we need Index?
+
+```js
+db.users.findOne({email: "nawaz@gmail.com"})
+```
+> MongoDB searches/scans all the documents of the collection one by one to get email: "nawaz@gmail.com" which makes the query time slower. To fix this we need to create Index on the most searched fields. Now when MongoDB searches on Index, Index directly points to the document.
+
+> An index is a separate data structure maintained by MongoDB.
+
+```
+It stores:
+
+Indexed Field
+↓
+Pointer
+↓
+Actual Document
+```
+
+### How to create an Index
+
+```js
+For Ascending : 
+db.users.createIndex({
+   email:1
+})
+
+For Descending : 
+db.users.createIndex({
+   salary:-1
+})
+
+Ascending vs Descending - It affects how MongoDB traverses the index efficiently for sorting.Direction matters mainly for sort operations and compound indexes.
+
+Ascending : 
+
+10,20,30,40,50
+
+Descending :
+
+50,40,30,,20,10
+```
+
+## Compound Index 
+
+> Suppose your application frequently runs:
+
+```js
+db.users.find({
+   department:"Engineering",
+   age:26
+})
+```
+
+
+> Instead of two separate indexes: department & age
+
+> Create one compound index:
+```js
+db.users.createIndex({
+   department:1,
+   age:1
+})
+
+- MongoDB can efficiently answer queries using both fields together.
+```
+> Order Matters
+```
+After creating compound Index of department and age 
+
+Case 1 : Querying with only department field -- Good
+Case 2 : Querying with both department & age field -- Good
+Case 3 : Querying with only age field -- not optimal
+
+Why? 
+MongoDB uses the leftmost prefix rule.
+```
+
+## Unique Index - Duplicates are rejected automatically.
+
+```js
+db.users.createIndex(
+   {
+      email:1
+   },
+   {
+      unique:true
+   }
+)
+```
+
+## TTL Index
+
+TTL means: Time To Live
+
+```js
+db.otps.createIndex(
+   {
+      expiresAt:1
+   },
+   {
+      expireAfterSeconds:0
+   }
+)
+```
+
+Suppose OTP expires after 10 minutes.
+
+Instead of writing a cleanup job which deletes expired OTP
+
+- MongoDB can delete them automatically.
+- When the expiresAt time passes, MongoDB's background TTL monitor removes the document automatically (not necessarily at the exact second).
+
+## Explain()
+
+One of the most powerful tools in MongoDB.
+
+Instead of guessing...
+
+Ask MongoDB what it did.
+
+```js
+db.users.find({
+   email:"nawaz@gmail.com"
+}).explain()
+```
+
+The output includes:
+
+Which index was used
+Whether a collection scan occurred
+Documents examined
+Keys examined
+Execution time
+
+In production, explain() is invaluable when diagnosing slow queries.
+
+## @nestjs/mongoose
+
+```
+NestJS
+   │
+   ▼
+Mongoose (@nestjs/mongoose)
+   │
+   ▼
+MongoDB Driver
+   │
+   ▼
+MongoDB Server (Atlas)
+```
+
+```
+What Does MongooseModule.forRoot() Do?
+NestJS Application Starts
+          │
+          ▼
+Loads AppModule
+          │
+          ▼
+Loads MongooseModule.forRoot(...)
+          │
+          ▼
+Creates MongoDB Connection
+          │
+          ▼
+Registers Connection in NestJS DI Container
+          │
+          ▼
+Other Modules Can Use It
+```
+
+```
+What Does forFeature() Do?
+
+Now suppose you have a User schema.
+
+User Schema
+
+You want to use it inside UserService.
+
+How does NestJS know about it?
+
+That's the job of forFeature().
+
+Conceptually:
+
+User Schema
+      │
+      ▼
+Create User Model
+      │
+      ▼
+Register in DI Container
+      │
+      ▼
+Inject into UserService
+```
+
+So:
+
+forRoot() creates the database connection.
+forFeature() registers models for a specific module.
+
+### installation
+```js
+- pnpm install @nestjs/mongoose mongoose
+
+- Recommended App Module 
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
+    MongooseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>("MONGODB_URI"),
+      }),
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Why forRootAsync()?
+
+```
+Most tutorials use:
+
+MongooseModule.forRoot(uri);
+
+That works, but forRootAsync() is more flexible.
+
+It lets you:
+
+Read from ConfigService.
+Load secrets from a secret manager.
+Configure TLS.
+Add retry options.
+Build the connection dynamically.
+
+In production, this flexibility is valuable.
 ```

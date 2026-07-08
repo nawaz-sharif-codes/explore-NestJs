@@ -9,7 +9,6 @@ export class PasswordHashService {
   async passwordHash(password: string): Promise<string> {
     try {
       const rounds = this.configService.get<number>('SALT_ROUNDS', 10);
-      console.log('rounds', typeof rounds);
       const passwordHash = await bcrypt.hash(password, Number(rounds));
       return passwordHash;
     } catch (error) {
