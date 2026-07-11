@@ -8,7 +8,7 @@ export class PasswordHashService {
   constructor(private readonly configService: ConfigService) {}
   async passwordHash(password: string): Promise<string> {
     try {
-      const rounds = this.configService.get<number>('SALT_ROUNDS', 10);
+      const rounds = this.configService.get<string>('hash.rounds');
       const passwordHash = await bcrypt.hash(password, Number(rounds));
       return passwordHash;
     } catch (error) {

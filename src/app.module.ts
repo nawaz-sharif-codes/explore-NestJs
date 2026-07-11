@@ -6,6 +6,8 @@ import { UserModule } from './user/user.module';
 import { PasswordHashModule } from './common/password-hash/password-hash.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import mongodbConfig from './config/mongodb.config';
+import passwordHashConfig from './config/passwordHash.config';
 
 @Module({
   imports: [
@@ -14,11 +16,12 @@ import { MongooseModule } from '@nestjs/mongoose';
     PasswordHashModule,
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [mongodbConfig, passwordHashConfig],
     }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGO_CONNECTION_STRING'),
+        uri: configService.get<string>('mongodb.uri'),
       }),
     }),
   ],
