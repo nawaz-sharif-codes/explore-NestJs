@@ -654,6 +654,7 @@ MongoDB Server (Atlas)
 
 ```
 What Does MongooseModule.forRoot() Do?
+
 NestJS Application Starts
           │
           ▼
@@ -704,7 +705,7 @@ So:
 forRoot() creates the database connection.
 forFeature() registers models for a specific module.
 
-### installation
+### Installation
 ```js
 - pnpm install @nestjs/mongoose mongoose
 
@@ -745,4 +746,287 @@ Add retry options.
 Build the connection dynamically.
 
 In production, this flexibility is valuable.
+```
+
+### What is a Schema?
+
+A Schema is a blueprint that describes:
+
+- What fields exist
+- Their data types
+- Validation rules
+- Default values
+- Indexes
+- Relationships
+- How documents behave
+
+In Mongoose:
+
+```
+Schema
+     │
+     ▼
+Documents
+
+Every document created from the schema follows the same structure.
+```
+
+### The Three Building Blocks
+
+- Every Mongoose schema has three important pieces.
+
+```js
+Class
+   │
+   ▼
+@Schema()
+   │
+   ▼
+SchemaFactory
+```
+
+### Step 1 — The Class
+
+- A schema starts as a TypeScript class.
+
+Example:
+
+```js
+export class User {
+  name: string;
+
+  age: number;
+
+  email: string;
+}
+```
+
+### Step 2 — @Schema()
+
+- Now we decorate the class.
+
+```js
+@Schema()
+export class User {}
+```
+
+- This tells NestJS: "This class should become a Mongoose schema."
+
+### Step 3 — @Prop()
+
+- Each property that should be stored in MongoDB needs `@Prop()`.
+- Without @Prop(), the field is not included in the schema.
+
+### Step 4 — SchemaFactory
+
+Now convert the class into a real Mongoose schema.
+
+```js
+export const UserSchema = SchemaFactory.createForClass(User);
+```
+
+```js
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+
+@Schema()
+export class User {
+  @Prop()
+  name: string;
+
+  @Prop()
+  email: string;
+
+  @Prop()
+  age: number;
+}
+
+export const UserSchema = SchemaFactory.createForClass(User);
+```
+
+### Schema Options
+
+- The @Schema() decorator accepts configuration options.
+
+#### 1. timestamps
+```js
+@Schema({
+  timestamps: true,
+})
+```
+
+```
+Now Mongoose automatically adds:
+
+{
+  "createdAt": "...",
+  "updatedAt": "..."
+}
+
+> Whenever you save a document:
+
+Create User
+↓
+createdAt = now
+updatedAt = now
+
+> When you update:
+
+Update User
+↓
+updatedAt changes
+
+createdAt stays the same
+```
+
+#### 2. collection
+
+By default:
+
+export class User {} becomes `users`
+
+- Mongoose pluralizes the model name.
+
+- If you want a custom collection:
+
+```js
+@Schema({
+  collection: "customers",
+})
+
+Now data is stored in: customers collection
+```
+
+#### 3. versionKey: false
+
+```
+MongoDB stores:
+
+{
+  "__v": 0
+}
+
+This is the version key.
+
+It helps Mongoose track document versions and supports features like optimistic concurrency.
+
+Many tutorials disable it immediately:
+
+versionKey: false
+
+Don't do this blindly.
+
+Only disable it if you understand why your application doesn't need it.
+```
+
+#### 4. strict: true
+
+```
+Suppose schema: 
+
+@Schema({timestamps: true,
+collection: 'users',
+versionKey: false,
+strict: true})
+
+export class User{
+  @Prop()
+  name : string,
+  @Prop()
+  email : string
+}
+
+Someone inserts:
+
+{
+  "name": "Nawaz",
+  "email": "abc@gmail.com",
+  "salary": 100000
+}
+
+With strict mode enabled (the default):
+
+salary
+↓
+Ignored
+
+Only schema-defined fields are stored.
+
+This helps keep your database clean.
+```
+
+### @Prop() options
+
+#### 1. Default Values
+
+```js
+@Prop({
+  default: true,
+})
+isActive: boolean;
+
+- Now every new user automatically gets:
+
+{
+  "isActive": true
+}
+
+No need to repeat it in your service layer.
+```
+
+#### 2. Required Fields
+
+```js
+@Prop({
+  required: true,
+})
+email: string;
+
+- Now if object doesnt contain email
+
+{name: 'nawaz'}
+
+- fails validation.
+
+- Mongoose rejects it before writing to MongoDB.
+```
+
+#### 3. Enum Values
+
+Suppose users can have only: ADMIN,USER,MANAGER
+
+```js
+Schema:
+
+@Prop({
+  enum: ["ADMIN", "USER", "MANAGER"],
+})
+role: string;
+```
+Now:
+
+CEO
+
+is rejected.
+
+
+## Validate at the Right Layer
+
+```
+Client Request
+
+↓
+
+DTO Validation
+
+↓
+
+Business Logic
+
+↓
+
+Mongoose Schema Validation
+
+↓
+
+MongoDB
 ```
