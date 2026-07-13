@@ -2,6 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { PasswordHashService } from '../common/password-hash/password-hash.service';
+import { UserLoginDto } from './dto/login-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +22,11 @@ export class AuthService {
       throw new InternalServerErrorException('Failed to create user');
     }
   }
-  loginUser() {
-    return 'User login is successfull';
+  loginUser(userLoginDto: UserLoginDto) {
+    return {
+      success: true,
+      message: 'User logged in successfully',
+      data: userLoginDto,
+    };
   }
 }

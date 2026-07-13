@@ -1030,3 +1030,447 @@ Mongoose Schema Validation
 
 MongoDB
 ```
+
+
+## ValidationPipe
+> A built-in, out-of-the-box mechanism to validate and automatically transform incoming client request payloads before they reach your route handlers
+
+### What Is a Pipe?
+
+- A pipe is a class that runs on controller arguments before the controller method executes.
+
+Example : The request doesn't conceptually jump directly into createUser().
+
+```js
+@Post()
+createUser(@Body() body: CreateUserDto) {
+  console.log(body);
+}
+```
+
+```
+HTTP Request
+     │
+     ▼
+   Pipes
+     │
+     ▼
+Controller Method
+```
+### A pipe has two primary responsibilities:
+```
+Pipe
+ ├── Transformation
+ └── Validation
+ ```
+
+#### Transformation
+> Converts input from one form to another form.
+
+Consider: GET /users/123
+
+Controller:
+```js
+@Get(":id")
+findUser(@Param("id") id: number) {
+  console.log(typeof id);
+}
+```
+
+```
+You wrote:
+
+id: number
+
+But HTTP path parameters arrive as strings.
+
+The actual input is:
+
+"123"
+
+not:
+
+123
+
+Remember our previous lesson?
+
+TypeScript does not exist at runtime.
+
+So this:
+
+id: number
+
+does not automatically mean the incoming HTTP value is a number.
+```
+
+#### Using ParseIntPipe
+
+```js
+@Get(":id")
+findUser(
+  @Param("id", ParseIntPipe) id: number,
+) {
+  console.log(typeof id);
+}
+```
+
+> Flow
+
+```
+"123"
+  │
+  ▼
+ParseIntPipe
+  │
+  ▼
+123
+  │
+  ▼
+Controller
+```
+
+```
+The pipe transformed:
+
+string → number
+
+If the client sends:
+
+/users/nawaz
+
+ParseIntPipe fails.
+
+The controller does not execute.
+```
+
+#### Validation
+
+Now consider:
+```js
+{
+  "email": "hello",
+  "age": -10
+}
+```
+A validation pipe asks:
+
+Is email valid?
+      │
+      ├── No ❌
+      │
+      ▼
+Throw Exception
+
+The request stops before reaching your controller.
+
+HTTP Request
+     │
+     ▼
+ValidationPipe
+     │
+     ├── Invalid ──► 400 Bad Request
+     │
+     ▼
+Controller
+
+This is important.
+
+Your controller should ideally receive already validated input.
+
+### NestJS Request Lifecycle
+
+```
+HTTP Request
+      │
+      ▼
+Middleware
+      │
+      ▼
+Guards
+      │
+      ▼
+Interceptors
+      │
+      ▼
+Pipes
+      │
+      ▼
+Controller
+      │
+      ▼
+Service
+```
+
+## What Is ValidationPipe?
+
+```js
+import { ValidationPipe } from "@nestjs/common";
+
+- Its job is to validate incoming controller arguments against DTO validation metadata.
+```
+
+Typical setup : 
+```js
+- On controller method
+@Post()
+@UsePipes(new ValidationPipe({ transform: true }))
+async create(@Body() createCatDto: CreateCatDto) {
+  this.catsService.create(createCatDto);
+}
+```
+
+```js
+- To enable this behavior globally, set the option on a global pipe:
+app.useGlobalPipes(
+  new ValidationPipe(),
+);
+```
+Conceptually:
+
+```js
+transform(value, metadata) {
+  console.log(metadata.metatype);
+}
+```
+
+1. Example of Custom ValidationPipe : 
+
+```js
+import {
+  ArgumentMetadata,
+  Injectable,
+  PipeTransform,
+} from "@nestjs/common";
+
+@Injectable()
+export class LoggingPipe implements PipeTransform {
+  transform(
+    value: unknown,
+    metadata: ArgumentMetadata,
+  ) {
+    console.log("VALUE:", value);
+    console.log("METADATA:", metadata);
+
+    return value;
+  }
+}
+```
+
+2. Example of Custom AgeValidationPipe :
+
+```js
+@Injectable()
+export class AgeValidationPipe implements PipeTransform {
+  transform(value: number) {
+    if (value < 18) {
+      throw new BadRequestException(
+        "Age must be at least 18",
+      );
+    }
+
+    return value;
+  }
+}
+```
+
+Controller
+```js
+@Post()
+createUser(
+  @Body("age", AgeValidationPipe)
+  age: number,
+) {
+  return age;
+}
+```
+
+
+## class-transformer
+
+1. Use class-transformer globally
+
+### transform: true
+
+This enables automatic transformation.
+```js
+app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+    }),
+  );
+```
+
+
+2. Explicit conversion
+
+```js
+fetchUser(@Param('id', ParseIntPipe) id: number) {}
+fetchUser(@Param('sort', ParseBoolPipe) id: boolean) {}
+```
+
+### whitelist: true
+
+This is very important for production.
+
+DTO:
+```js
+class CreateUserDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  name: string;
+}
+```
+Client sends:
+
+```js
+{
+  "email": "nawaz@gmail.com",
+  "name": "Nawaz",
+  "isAdmin": true
+}
+```
+
+Dangerous field:
+
+isAdmin
+
+With:
+```js
+new ValidationPipe({
+  whitelist: true,
+})
+```
+
+Nest removes properties that do not have validation decorators in the DTO.
+
+Controller receives:
+
+```js
+{
+  "email": "nawaz@gmail.com",
+  "name": "Nawaz"
+}
+```
+
+isAdmin is stripped.
+
+### forbidNonWhitelisted: true
+
+With only:
+
+whitelist: true
+
+unknown fields are removed.
+
+But maybe you want the API to reject the request completely.
+
+Use:
+
+```js
+new ValidationPipe({
+  whitelist: true,
+  forbidNonWhitelisted: true,
+})
+```
+
+Client:
+
+```js
+{
+  "email": "nawaz@gmail.com",
+  "isAdmin": true
+}
+```
+
+Result:
+
+400 Bad Request
+
+Nest requires whitelist: true with forbidNonWhitelisted: true for this behavior.
+
+## class-validator
+
+- class-validator provides decorator-based runtime validation and is the standard validation approach documented by NestJS.
+
+```
+TypeScript type     → Compile-time safety
+class-validator     → Runtime validation
+```
+
+```
+HTTP JSON
+   │
+   ▼
+ValidationPipe
+   │
+   ▼
+class-transformer
+   │
+   ▼
+DTO Instance
+   │
+   ▼
+class-validator
+   │
+   ├── Invalid → 400
+   │
+   ▼
+Controller
+```
+
+Installation
+
+```js
+npm install class-validator class-transformer
+```
+
+Then configure the global pipe:
+
+```js
+import { ValidationPipe } from "@nestjs/common";
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
+  await app.listen(3000);
+}
+
+bootstrap();
+```
+
+### String Validators
+
+1. @IsString()
+```
+@IsString() - Theory: Value must be a JavaScript string.
+```
+
+2. @IsNotEmpty()
+```
+@IsNotEmpty() - Theory: Value must not be an empty string.
+```
+
+3. @MinLength()
+```
+@MinLength() - Minimum string length.
+
+```
+4. @MaxLength()
+```
+@MaxLength() - Maximum string length.
+```
+
+4. @Length(min,max)
+```
+@Length() - Minimum and maximum length together.
+```
