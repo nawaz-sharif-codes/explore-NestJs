@@ -1,4 +1,4 @@
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
@@ -56,6 +56,7 @@ export class ClassValidator {
   @IsString()
   @IsNotEmpty()
   @Expose()
+  @Transform(({ value }: { value: string }) => value.toLowerCase())
   email!: string;
 
   @IsString()
