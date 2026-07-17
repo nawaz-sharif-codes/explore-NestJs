@@ -1474,3 +1474,11 @@ bootstrap();
 ```
 @Length() - Minimum and maximum length together.
 ```
+
+> Visit : https://chatgpt.com/c/6a4a89d0-c8fc-83e8-9895-048db383c7b8 for detailed explanations on the ValidationPipe, class-transformer & class-validator.
+
+---
+
+
+
+

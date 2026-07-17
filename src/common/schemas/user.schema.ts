@@ -11,32 +11,32 @@ export class User {
     required: true,
     minLength: 3,
   })
-  firstName: string;
+  firstName!: string;
   @Prop({
     required: true,
     minLength: 3,
   })
-  lastName: string;
+  lastName!: string;
   @Prop({
     required: true,
     lowercase: true,
     unique: true,
   })
-  email: string;
+  email!: string;
   @Prop({
     required: true,
     select: false,
   })
-  password: string;
+  password!: string;
   @Prop({
     required: true,
     unique: true,
   })
-  contactNumber: string;
+  contactNumber!: string;
   @Prop({
     required: true,
   })
-  address: UserAddress;
+  address!: UserAddress;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
