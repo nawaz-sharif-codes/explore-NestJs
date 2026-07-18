@@ -143,6 +143,118 @@ returns
 my-secret
 ```
 
+### NestJS Request Lifecycle
+
+```
+HTTP Request
+      │
+      ▼
+Middleware
+      │
+      ▼
+Guards
+      │
+      ▼
+Interceptors
+      │
+      ▼
+Pipes
+      │
+      ▼
+Controller
+      │
+      ▼
+Service
+```
+
+## Middleware
+
+- middleware is a function which is called before the request hits the route handlers. middleware function has the access to Request, Response & NextFunction
+
+Common use cases of a middleware :
+
+```
+Logging
+Correlation IDs
+Request timing
+Security headers
+CORS
+Compression
+Authentication token extraction (but usually not authorization decisions)
+```
+
+### Logging Middleware
+
+```js
+@Injectable()
+export class LoggingMiddleware implements NestMiddleware {
+  private readonly logger = new Logger(LoggingMiddleware.name);
+  use(req: Request, res: Response, next: NextFunction): void {
+    const { method, originalUrl, ip } = req;
+    this.logger.log(
+      `Incoming ${method} request on api : ${originalUrl} from ipAddress : ${ip}`,
+    );
+    const start = Date.now();
+
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      this.logger.log(
+        `Outgoing response from ${method} request on api : ${originalUrl} from ipAddress : ${ip} in ${duration}ms with statusCode ${res.statusCode}`,
+      );
+    });
+    next();
+  }
+}
+
+In AppModule
+
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggingMiddleware).forRoutes('/customer/register');
+  }
+}
+
+What is consumer.apply() ?
+
+consumer.apply(LoggingMiddleware)
+
+Means:
+
+Apply this middleware.
+
+You can apply multiple middlewares:
+
+consumer
+  .apply(
+      LoggerMiddleware,
+      AuthMiddleware,
+      MetricsMiddleware,
+  )
+
+They execute in order.
+
+What is forRoutes()
+
+This determines where the middleware runs.
+
+Every route:
+
+.forRoutes('*')
+
+Only customers:
+
+.forRoutes(CustomerController)
+
+Only one endpoint:
+
+.forRoutes({
+    path:'customers',
+    method:RequestMethod.POST
+})
+
+Very powerful.
+```
+
 ## MongoDB
 
 - MongoDB is a flexible schema, Document Database. A document can contain nested objects.
@@ -1176,30 +1288,6 @@ Controller
 This is important.
 
 Your controller should ideally receive already validated input.
-
-### NestJS Request Lifecycle
-
-```
-HTTP Request
-      │
-      ▼
-Middleware
-      │
-      ▼
-Guards
-      │
-      ▼
-Interceptors
-      │
-      ▼
-Pipes
-      │
-      ▼
-Controller
-      │
-      ▼
-Service
-```
 
 ## What Is ValidationPipe?
 
