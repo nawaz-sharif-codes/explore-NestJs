@@ -146,25 +146,43 @@ my-secret
 ### NestJS Request Lifecycle
 
 ```
-HTTP Request
-      │
-      ▼
+Http Request
+
+↓
+
 Middleware
-      │
-      ▼
-Guards
-      │
-      ▼
-Interceptors
-      │
-      ▼
-Pipes
-      │
-      ▼
+
+↓
+
+Guard
+
+↓
+
+Interceptor (Before)
+
+↓
+
+Pipe
+
+↓
+
 Controller
-      │
-      ▼
+
+↓
+
 Service
+
+↓
+
+Database
+
+↓
+
+Interceptor (After)
+
+↓
+
+Response
 ```
 
 ## Middleware
@@ -337,6 +355,97 @@ Controller level:
 export class CustomerController {}
 
 Now every endpoint inside the controller is protected.
+```
+
+## Interceptors
+
+- Interceptors can execute both before and after your controller,
+
+- Every interceptor implements: `NestInterceptor`
+
+```js
+@Injectable()
+export class LoggingInterceptor
+  implements NestInterceptor {
+
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ) {
+    return next.handle();
+  }
+}
+
+- What does next.handle() do here ? It returns an Observable.
+
+"Execute the next step in the pipeline and let me observe or transform its result."
+
+Now use pipe().
+
+return next.handle().pipe(
+    ...
+);
+
+"That code inside the pipe runs after the controller finishes and the response is ready to be emitted"
+```
+### The tap() Operator
+
+The most common operator in a logging interceptor is:
+
+tap()
+
+It lets you observe the value without changing it.
+```js
+return next.handle().pipe(
+  tap(() => {
+    console.log("Finished");
+  }),
+);
+```
+
+#### What is the responsibility of CallHandler?
+
+A strong answer:
+
+CallHandler represents the next step in the request pipeline. Calling next.handle() executes the controller and returns an Observable representing the eventual response. The interceptor can use RxJS operators like tap(), map(), and catchError() to observe or transform that response before it is sent to the client.
+
+```
+--------------------------------------------------------------------------
+| Interceptor           | RxJS Operator  | Purpose                       |
+| --------------------- | -------------- | ----------------------------- |
+| Response Interceptor  | `map()`        | Standardize API responses     |
+| Logging Interceptor   | `tap()`        | Logging & metrics             |
+| Exception Interceptor | `catchError()` | Transform exceptions          |
+| Timeout Interceptor   | `timeout()`    | Prevent long-running requests |
+--------------------------------------------------------------------------
+
+A simple rule to remember:
+
+tap() observes.
+map() transforms.
+catchError() to catch errors
+```
+
+### Applying the Interceptor
+```js
+Route level
+
+@UseInterceptors(ResponseInterceptor)
+@Get()
+findAll() {}
+
+Controller level
+
+@UseInterceptors(ResponseInterceptor)
+@Controller("customers")
+
+Global
+
+app.useGlobalInterceptors(
+    new ResponseInterceptor(),
+);
+
+Every endpoint automatically returns the same response format.
 ```
 
 ## MongoDB
