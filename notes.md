@@ -266,6 +266,79 @@ Only one endpoint:
 Very powerful.
 ```
 
+## Guards
+
+Guards executes after middleware but before the controller. Decide whether the request may proceed.
+
+> Everything in NestJS authentication and authorization—JWT Guards, Roles Guards, Permissions Guards, API Key Guards—builds on just two concepts:
+
+- CanActivate
+- ExecutionContext
+
+Master these, and you'll understand almost every production guard.
+
+### What is CanActivate?
+
+When you create a Guard, you'll implement one interface:
+
+#### CanActivate
+
+Think of it as a contract.
+
+It tells NestJS:
+
+"This class can decide whether a request should continue."
+
+Just like middleware implements:
+
+NestMiddleware
+
+a Guard implements:
+
+CanActivate
+
+```js
+@Injectable()
+export class ApiKeyGuard implements CanActivate {
+  constructor(private readonly configService: ConfigService) {}
+  canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest<Request>();
+    const apiKey = request.header('x-api-key');
+    const apiKeySecret = this.configService.get<string>('apiKey.secret');
+    if (apiKey === apiKeySecret) return true;
+    else {
+      throw new UnauthorizedException();
+    }
+  }
+}
+```
+
+```js
+Applying the Guard
+
+A Guard does nothing until it's applied.
+
+Use the @UseGuards() decorator.
+
+Route level:
+
+@Get()
+@UseGuards(ApiKeyGuard)
+findAll() {
+    ...
+}
+
+Only this endpoint is protected.
+
+Controller level:
+
+@UseGuards(ApiKeyGuard)
+@Controller('customers')
+export class CustomerController {}
+
+Now every endpoint inside the controller is protected.
+```
+
 ## MongoDB
 
 - MongoDB is a flexible schema, Document Database. A document can contain nested objects.

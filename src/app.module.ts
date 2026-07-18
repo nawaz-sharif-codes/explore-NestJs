@@ -16,6 +16,7 @@ import mongodbConfig from './config/mongodb.config';
 import passwordHashConfig from './config/passwordHash.config';
 import { LoggingMiddleware } from './middleware/logging.middleware';
 import { RequestIdMiddleware } from './middleware/requestId.middleware';
+import apikeyConfig from './config/apikey.config';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { RequestIdMiddleware } from './middleware/requestId.middleware';
     PasswordHashModule,
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [mongodbConfig, passwordHashConfig],
+      load: [mongodbConfig, passwordHashConfig, apikeyConfig],
     }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
