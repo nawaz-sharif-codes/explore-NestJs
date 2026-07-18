@@ -8,16 +8,25 @@ export class LoggingMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
     const { method, originalUrl, ip } = req;
     const requestId = req.header('x-request-id') ?? 'unknown';
-    this.logger.log(
-      `Incoming ${method} request ${requestId} on api : ${originalUrl} from ipAddress : ${ip}`,
-    );
+    this.logger.log('Incoming Request :', {
+      requestId,
+      method,
+      originalUrl,
+      ip,
+    });
     const start = Date.now();
 
     res.on('finish', () => {
+      const statusCode = res.statusCode;
       const duration = Date.now() - start;
-      this.logger.log(
-        `Outgoing response from ${method} request ${requestId} on api : ${originalUrl} from ipAddress : ${ip} in ${duration}ms with statusCode ${res.statusCode}`,
-      );
+      this.logger.log('Outgoing Response :', {
+        requestId,
+        method,
+        originalUrl,
+        ip,
+        duration,
+        statusCode,
+      });
     });
     next();
   }

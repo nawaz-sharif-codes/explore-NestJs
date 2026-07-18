@@ -189,18 +189,29 @@ Authentication token extraction (but usually not authorization decisions)
 @Injectable()
 export class LoggingMiddleware implements NestMiddleware {
   private readonly logger = new Logger(LoggingMiddleware.name);
+
   use(req: Request, res: Response, next: NextFunction): void {
     const { method, originalUrl, ip } = req;
-    this.logger.log(
-      `Incoming ${method} request on api : ${originalUrl} from ipAddress : ${ip}`,
-    );
+    const requestId = req.header('x-request-id') ?? 'unknown';
+    this.logger.log('Incoming Request :', {
+      requestId,
+      method,
+      originalUrl,
+      ip,
+    });
     const start = Date.now();
 
     res.on('finish', () => {
+      const statusCode = res.statusCode;
       const duration = Date.now() - start;
-      this.logger.log(
-        `Outgoing response from ${method} request on api : ${originalUrl} from ipAddress : ${ip} in ${duration}ms with statusCode ${res.statusCode}`,
-      );
+      this.logger.log('Outgoing Response :', {
+        requestId,
+        method,
+        originalUrl,
+        ip,
+        duration,
+        statusCode,
+      });
     });
     next();
   }
